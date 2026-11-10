@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Order {
+  id              Int         @id @default(autoincrement())
+  orderNumber     String      @unique @map("order_number") @db.VarChar(20)
+  customerEmail   String      @map("customer_email") @db.VarChar(255)
+  customerName    String      @map("customer_name") @db.VarChar(200)
+  customerPhone   String?     @map("customer_phone") @db.VarChar(20)
+  shippingAddress String      @map("shipping_address") @db.Text
+  shippingCity    String      @map("shipping_city") @db.VarChar(100)
+  subtotal        Decimal     @db.Decimal(10, 2)
+  shippingCost    Decimal     @default(0) @map("shipping_cost") @db.Decimal(10, 2)
+  total           Decimal     @db.Decimal(10, 2)
+  status          String      @default("pending") @db.VarChar(50)
+  paymentMethod   String?     @map("payment_method") @db.VarChar(50)
+  notes           String?     @db.Text
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  items           OrderItem[]
+
+  @@index([customerEmail])
+  @@index([status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id          Int     @id @default(autoincrement())
+  orderId     Int     @map("order_id")
+  productId   Int     @map("product_id")
+  productName String  @map("product_name") @db.VarChar(200)
+  quantity    Int
+  unitPrice   Decimal @map("unit_price") @db.Decimal(10, 2)
+  totalPrice  Decimal @map("total_price") @db.Decimal(10, 2)
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
