@@ -1,8 +1,11 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { X, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
+import { api, Product } from '@/lib/api';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -11,6 +14,30 @@ interface CartDrawerProps {
 
 export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
   const { cart, updateQuantity, removeFromCart, isLoading } = useCartStore();
+  const [productDetails, setProductDetails] = useState<Record<number, Product>>({});
+
+  // Fetch product details for cart items
+  useEffect(() => {
+    const fetchProductDetails = async () => {
+      const details: Record<number, Product> = {};
+      for (const item of cart.items) {
+        if (!productDetails[item.productId]) {
+          try {
+            const product = await api.getProduct(item.productId);
+            details[item.productId] = product;
+          } catch (err) {
+            console.error(`Error fetching product ${item.productId}:`, err);
+          }
+        }
+      }
+      if (Object.keys(details).length > 0) {
+        setProductDetails(prev => ({ ...prev, ...details }));
+      }
+    };
+    if (cart.items.length > 0 && isOpen) {
+      fetchProductDetails();
+    }
+  }, [cart.items, isOpen]);
 
   if (!isOpen) return null;
 
@@ -53,47 +80,60 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             </div>
           ) : (
             <ul className="space-y-4">
-              {cart.items.map((item) => (
-                <li key={item.id} className="flex gap-4 bg-gray-50 p-3 rounded-lg">
-                  <div className="w-20 h-20 bg-primary-100 rounded-lg flex items-center justify-center">
-                    <ShoppingBag className="w-8 h-8 text-primary-400" />
-                  </div>
-
-                  <div className="flex-1">
-                    <p className="font-medium text-secondary text-sm">
-                      Producto #{item.productId}
-                    </p>
-                    <p className="text-accent font-semibold">
-                      ${Number(item.price).toFixed(2)}
-                    </p>
-
-                    <div className="flex items-center gap-2 mt-2">
-                      <button
-                        onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                        disabled={isLoading}
-                        className="w-7 h-7 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors disabled:opacity-50"
-                      >
-                        <Minus className="w-3 h-3" />
-                      </button>
-                      <span className="w-8 text-center font-medium">{item.quantity}</span>
-                      <button
-                        onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                        disabled={isLoading}
-                        className="w-7 h-7 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors disabled:opacity-50"
-                      >
-                        <Plus className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={() => removeFromCart(item.productId)}
-                        disabled={isLoading}
-                        className="ml-auto p-1 text-gray-400 hover:text-accent transition-colors disabled:opacity-50"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+              {cart.items.map((item) => {
+                const product = productDetails[item.productId];
+                return (
+                  <li key={item.id} className="flex gap-4 bg-gray-50 p-3 rounded-lg">
+                    <div className="w-20 h-20 bg-primary-100 rounded-lg flex items-center justify-center overflow-hidden">
+                      {product?.imageUrl ? (
+                        <Image
+                          src={product.imageUrl}
+                          alt={product.name}
+                          width={80}
+                          height={80}
+                          className="object-cover w-full h-full"
+                        />
+                      ) : (
+                        <ShoppingBag className="w-8 h-8 text-primary-400" />
+                      )}
                     </div>
-                  </div>
-                </li>
-              ))}
+
+                    <div className="flex-1">
+                      <p className="font-medium text-secondary text-sm">
+                        {product?.name || `Producto #${item.productId}`}
+                      </p>
+                      <p className="text-accent font-semibold">
+                        ${Number(item.price).toFixed(2)}
+                      </p>
+
+                      <div className="flex items-center gap-2 mt-2">
+                        <button
+                          onClick={() => updateQuantity(item.productId, item.quantity - 1)}
+                          disabled={isLoading}
+                          className="w-7 h-7 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors disabled:opacity-50"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="w-8 text-center font-medium">{item.quantity}</span>
+                        <button
+                          onClick={() => updateQuantity(item.productId, item.quantity + 1)}
+                          disabled={isLoading}
+                          className="w-7 h-7 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors disabled:opacity-50"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => removeFromCart(item.productId)}
+                          disabled={isLoading}
+                          className="ml-auto p-1 text-gray-400 hover:text-accent transition-colors disabled:opacity-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
@@ -103,7 +143,7 @@ export default function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
           <div className="border-t p-4 space-y-4">
             <div className="flex justify-between text-lg font-semibold">
               <span>Subtotal:</span>
-              <span className="text-accent">${cart.subtotal.toFixed(2)}</span>
+              <span className="text-accent">${Number(cart.subtotal).toFixed(2)}</span>
             </div>
             <Link
               href="/checkout"
