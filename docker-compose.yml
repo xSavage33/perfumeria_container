@@ -48,7 +48,8 @@ services:
       - PORT=3002
       - DATABASE_URL=postgresql://${DB_USER:-elcontainer}:${DB_PASSWORD:-elcontainer123}@postgres:5432/${DB_NAME:-elcontainer}
     depends_on:
-      - products
+      postgres:
+        condition: service_healthy
     networks:
       - dokploy-network
     deploy:
@@ -65,7 +66,8 @@ services:
       - PORT=3003
       - DATABASE_URL=postgresql://${DB_USER:-elcontainer}:${DB_PASSWORD:-elcontainer123}@postgres:5432/${DB_NAME:-elcontainer}
     depends_on:
-      - cart
+      postgres:
+        condition: service_healthy
     networks:
       - dokploy-network
     deploy:
