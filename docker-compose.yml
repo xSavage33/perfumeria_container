@@ -16,6 +16,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   # Products Service
   products:
@@ -30,6 +34,10 @@ services:
         condition: service_healthy
     networks:
       - dokploy-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   # Cart Service
   cart:
@@ -40,10 +48,13 @@ services:
       - PORT=3002
       - DATABASE_URL=postgresql://${DB_USER:-elcontainer}:${DB_PASSWORD:-elcontainer123}@postgres:5432/${DB_NAME:-elcontainer}
     depends_on:
-      postgres:
-        condition: service_healthy
+      - products
     networks:
       - dokploy-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   # Orders Service
   orders:
@@ -54,10 +65,13 @@ services:
       - PORT=3003
       - DATABASE_URL=postgresql://${DB_USER:-elcontainer}:${DB_PASSWORD:-elcontainer123}@postgres:5432/${DB_NAME:-elcontainer}
     depends_on:
-      postgres:
-        condition: service_healthy
+      - cart
     networks:
       - dokploy-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
 
   # API Gateway
   gateway:
@@ -70,11 +84,13 @@ services:
       - CART_SERVICE_URL=http://cart:3002
       - ORDERS_SERVICE_URL=http://orders:3003
     depends_on:
-      - products
-      - cart
       - orders
     networks:
       - dokploy-network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.gateway.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)"
@@ -87,12 +103,18 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=https://${DOMAIN}/api
     environment:
       - NEXT_PUBLIC_API_URL=https://${DOMAIN}/api
     depends_on:
       - gateway
     networks:
       - dokploy-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`${DOMAIN}`)"
