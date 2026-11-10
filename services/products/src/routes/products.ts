@@ -30,17 +30,17 @@ router.get(
   async (req: Request, res: Response) => {
     try {
       const filters = {
-        categoryId: req.query.categoryId as number | undefined,
-        brandId: req.query.brandId as number | undefined,
+        categoryId: req.query.categoryId ? Number(req.query.categoryId) : undefined,
+        brandId: req.query.brandId ? Number(req.query.brandId) : undefined,
         gender: req.query.gender as string | undefined,
-        minPrice: req.query.minPrice as number | undefined,
-        maxPrice: req.query.maxPrice as number | undefined,
+        minPrice: req.query.minPrice ? Number(req.query.minPrice) : undefined,
+        maxPrice: req.query.maxPrice ? Number(req.query.maxPrice) : undefined,
         search: req.query.search as string | undefined,
       };
 
       const pagination = {
-        page: (req.query.page as number) || 1,
-        limit: (req.query.limit as number) || 12,
+        page: req.query.page ? Number(req.query.page) : 1,
+        limit: req.query.limit ? Number(req.query.limit) : 12,
       };
 
       const result = await productService.getAll(filters, pagination);
