@@ -1,35 +1,69 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: elcontainer-db
     environment:
       POSTGRES_USER: ${DB_USER:-elcontainer}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-elcontainer123}
       POSTGRES_DB: ${DB_NAME:-elcontainer}
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
-      - elcontainer-network
+      - dokploy-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U elcontainer"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # Products Service
+  products:
+    build:
+      context: ./services/products
+      dockerfile: Dockerfile
+    environment:
+      - PORT=3001
+      - DATABASE_URL=postgresql://${DB_USER:-elcontainer}:${DB_PASSWORD:-elcontainer123}@postgres:5432/${DB_NAME:-elcontainer}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dokploy-network
+
+  # Cart Service
+  cart:
+    build:
+      context: ./services/cart
+      dockerfile: Dockerfile
+    environment:
+      - PORT=3002
+      - DATABASE_URL=postgresql://${DB_USER:-elcontainer}:${DB_PASSWORD:-elcontainer123}@postgres:5432/${DB_NAME:-elcontainer}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dokploy-network
+
+  # Orders Service
+  orders:
+    build:
+      context: ./services/orders
+      dockerfile: Dockerfile
+    environment:
+      - PORT=3003
+      - DATABASE_URL=postgresql://${DB_USER:-elcontainer}:${DB_PASSWORD:-elcontainer123}@postgres:5432/${DB_NAME:-elcontainer}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - dokploy-network
+
   # API Gateway
   gateway:
     build:
       context: ./services/gateway
       dockerfile: Dockerfile
-    container_name: elcontainer-gateway
-    ports:
-      - "3000:3000"
     environment:
       - PORT=3000
       - PRODUCTS_SERVICE_URL=http://products:3001
@@ -40,77 +74,35 @@ services:
       - cart
       - orders
     networks:
-      - elcontainer-network
-
-  # Products Service
-  products:
-    build:
-      context: ./services/products
-      dockerfile: Dockerfile
-    container_name: elcontainer-products
-    ports:
-      - "3001:3001"
-    environment:
-      - PORT=3001
-      - DATABASE_URL=postgresql://${DB_USER:-elcontainer}:${DB_PASSWORD:-elcontainer123}@postgres:5432/${DB_NAME:-elcontainer}?schema=products
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - elcontainer-network
-
-  # Cart Service
-  cart:
-    build:
-      context: ./services/cart
-      dockerfile: Dockerfile
-    container_name: elcontainer-cart
-    ports:
-      - "3002:3002"
-    environment:
-      - PORT=3002
-      - DATABASE_URL=postgresql://${DB_USER:-elcontainer}:${DB_PASSWORD:-elcontainer123}@postgres:5432/${DB_NAME:-elcontainer}?schema=cart
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - elcontainer-network
-
-  # Orders Service
-  orders:
-    build:
-      context: ./services/orders
-      dockerfile: Dockerfile
-    container_name: elcontainer-orders
-    ports:
-      - "3003:3003"
-    environment:
-      - PORT=3003
-      - DATABASE_URL=postgresql://${DB_USER:-elcontainer}:${DB_PASSWORD:-elcontainer123}@postgres:5432/${DB_NAME:-elcontainer}?schema=orders
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - elcontainer-network
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gateway.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.gateway.entrypoints=websecure"
+      - "traefik.http.routers.gateway.tls.certResolver=letsencrypt"
+      - "traefik.http.services.gateway.loadbalancer.server.port=3000"
 
   # Frontend Next.js
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: elcontainer-frontend
-    ports:
-      - "3004:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:3000/api
+      - NEXT_PUBLIC_API_URL=https://${DOMAIN}/api
     depends_on:
       - gateway
     networks:
-      - elcontainer-network
+      - dokploy-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certResolver=letsencrypt"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
 
 volumes:
   postgres_data:
 
 networks:
-  elcontainer-network:
-    driver: bridge
+  dokploy-network:
+    external: true
