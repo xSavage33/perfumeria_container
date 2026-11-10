@@ -14,7 +14,13 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Build argument for API URL
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
+
+# Create public folder if it doesn't exist
+RUN mkdir -p public
 
 RUN npm run build
 
@@ -28,6 +34,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Create public folder
+RUN mkdir -p public
 COPY --from=builder /app/public ./public
 
 RUN mkdir .next
