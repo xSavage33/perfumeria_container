@@ -69,20 +69,24 @@ export default function EditProduct() {
     setLoading(true);
 
     try {
-      await api.updateProduct(id, {
+      const productData: Record<string, any> = {
         name: form.name,
-        description: form.description || null,
         price: parseFloat(form.price),
-        discountPrice: form.discountPrice ? parseFloat(form.discountPrice) : null,
-        categoryId: form.categoryId ? parseInt(form.categoryId) : null,
-        brandId: form.brandId ? parseInt(form.brandId) : null,
-        imageUrl: form.imageUrl || null,
         stock: parseInt(form.stock) || 0,
-        fragranceNotes: form.fragranceNotes || null,
-        sizeMl: form.sizeMl ? parseInt(form.sizeMl) : null,
-        gender: form.gender || null,
         isActive: form.isActive,
-      } as any);
+      };
+
+      // Only add optional fields if they have values
+      if (form.description) productData.description = form.description;
+      if (form.discountPrice) productData.discountPrice = parseFloat(form.discountPrice);
+      if (form.categoryId) productData.categoryId = parseInt(form.categoryId);
+      if (form.brandId) productData.brandId = parseInt(form.brandId);
+      if (form.imageUrl) productData.imageUrl = form.imageUrl;
+      if (form.fragranceNotes) productData.fragranceNotes = form.fragranceNotes;
+      if (form.sizeMl) productData.sizeMl = parseInt(form.sizeMl);
+      if (form.gender) productData.gender = form.gender;
+
+      await api.updateProduct(id, productData as any);
       router.push('/admin/productos');
     } catch (error) {
       console.error('Error updating product:', error);
