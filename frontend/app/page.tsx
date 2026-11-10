@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import { ArrowRight, Truck, Shield, CreditCard } from 'lucide-react';
 import ProductGrid from '@/components/products/ProductGrid';
-import { api } from '@/lib/api';
+import { api, Product } from '@/lib/api';
 
 export default async function HomePage() {
-  let featuredProducts = [];
+  let featuredProducts: Product[] = [];
 
   try {
     featuredProducts = await api.getFeaturedProducts(8);
