@@ -44,10 +44,13 @@ export interface Cart {
 }
 
 export interface OrderItem {
+  id?: number;
+  orderId?: number;
   productId: number;
   productName: string;
   quantity: number;
   unitPrice: number;
+  totalPrice?: number;
 }
 
 export interface Order {
@@ -62,8 +65,11 @@ export interface Order {
   shippingCost: number;
   total: number;
   status: string;
+  paymentMethod?: string;
+  notes?: string | null;
   items: OrderItem[];
   createdAt: string;
+  updatedAt?: string;
 }
 
 export const api = {
@@ -265,5 +271,30 @@ export const api = {
       method: 'DELETE',
     });
     if (!res.ok) throw new Error('Failed to delete brand');
+  },
+
+  // Admin - Orders
+  async getOrders(params?: { page?: number; limit?: number; status?: string }): Promise<{
+    orders: Order[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  }> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set('page', params.page.toString());
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.status) searchParams.set('status', params.status);
+
+    const res = await fetch(`${API_URL}/orders?${searchParams}`);
+    if (!res.ok) throw new Error('Failed to fetch orders');
+    return res.json();
+  },
+
+  async updateOrderStatus(id: number, status: string): Promise<Order> {
+    const res = await fetch(`${API_URL}/orders/${id}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) throw new Error('Failed to update order status');
+    return res.json();
   },
 };
