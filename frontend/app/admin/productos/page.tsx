@@ -123,9 +123,9 @@ export default function ProductsAdmin() {
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <p className="font-medium">${product.price.toFixed(2)}</p>
+                    <p className="font-medium">${Number(product.price).toFixed(2)}</p>
                     {product.discountPrice && (
-                      <p className="text-sm text-accent">${product.discountPrice.toFixed(2)}</p>
+                      <p className="text-sm text-accent">${Number(product.discountPrice).toFixed(2)}</p>
                     )}
                   </td>
                   <td className="px-6 py-4">
