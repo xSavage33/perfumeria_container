@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Package, Tags, Award, LayoutDashboard, ArrowLeft } from 'lucide-react';
+import { Package, Tags, Award, LayoutDashboard, ArrowLeft, ShoppingCart } from 'lucide-react';
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/pedidos', label: 'Pedidos', icon: ShoppingCart },
   { href: '/admin/productos', label: 'Productos', icon: Package },
   { href: '/admin/categorias', label: 'Categorias', icon: Tags },
   { href: '/admin/marcas', label: 'Marcas', icon: Award },
