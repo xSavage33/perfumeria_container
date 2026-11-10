@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle, ShoppingBag } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
-import { api } from '@/lib/api';
+import { api, Product } from '@/lib/api';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -14,6 +14,7 @@ export default function CheckoutPage() {
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
   const [error, setError] = useState('');
+  const [productDetails, setProductDetails] = useState<Record<number, Product>>({});
 
   const [formData, setFormData] = useState({
     customerName: '',
@@ -28,6 +29,29 @@ export default function CheckoutPage() {
     fetchCart();
   }, [fetchCart]);
 
+  // Fetch product details for cart items
+  useEffect(() => {
+    const fetchProductDetails = async () => {
+      const details: Record<number, Product> = {};
+      for (const item of cart.items) {
+        if (!productDetails[item.productId]) {
+          try {
+            const product = await api.getProduct(item.productId);
+            details[item.productId] = product;
+          } catch (err) {
+            console.error(`Error fetching product ${item.productId}:`, err);
+          }
+        }
+      }
+      if (Object.keys(details).length > 0) {
+        setProductDetails(prev => ({ ...prev, ...details }));
+      }
+    };
+    if (cart.items.length > 0) {
+      fetchProductDetails();
+    }
+  }, [cart.items]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -38,13 +62,27 @@ export default function CheckoutPage() {
         ...formData,
         items: cart.items.map((item) => ({
           productId: item.productId,
-          productName: `Producto #${item.productId}`,
+          productName: productDetails[item.productId]?.name || `Producto #${item.productId}`,
           quantity: item.quantity,
           unitPrice: Number(item.price),
         })),
       };
 
       const order = await api.createOrder(orderData);
+
+      // Update stock for each product
+      for (const item of cart.items) {
+        try {
+          const product = productDetails[item.productId];
+          if (product) {
+            const newStock = Math.max(0, product.stock - item.quantity);
+            await api.updateProduct(item.productId, { stock: newStock });
+          }
+        } catch (err) {
+          console.error(`Error updating stock for product ${item.productId}:`, err);
+        }
+      }
+
       setOrderNumber(order.orderNumber);
       setOrderComplete(true);
       clearCart();
@@ -269,7 +307,7 @@ export default function CheckoutPage() {
                 {cart.items.map((item) => (
                   <div key={item.id} className="flex justify-between">
                     <span className="text-gray-600">
-                      Producto #{item.productId} x {item.quantity}
+                      {productDetails[item.productId]?.name || `Producto #${item.productId}`} x {item.quantity}
                     </span>
                     <span className="font-medium">
                       ${(Number(item.price) * item.quantity).toFixed(2)}
