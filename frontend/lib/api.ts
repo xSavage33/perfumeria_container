@@ -182,4 +182,88 @@ export const api = {
     if (!res.ok) throw new Error('Failed to fetch order');
     return res.json();
   },
+
+  // Admin - Products
+  async createProduct(data: Partial<Product>): Promise<Product> {
+    const res = await fetch(`${API_URL}/products`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to create product');
+    return res.json();
+  },
+
+  async updateProduct(id: number, data: Partial<Product>): Promise<Product> {
+    const res = await fetch(`${API_URL}/products/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to update product');
+    return res.json();
+  },
+
+  async deleteProduct(id: number): Promise<void> {
+    const res = await fetch(`${API_URL}/products/${id}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) throw new Error('Failed to delete product');
+  },
+
+  // Admin - Categories
+  async createCategory(data: { name: string; slug: string }): Promise<Category> {
+    const res = await fetch(`${API_URL}/categories`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to create category');
+    return res.json();
+  },
+
+  async updateCategory(id: number, data: { name: string; slug: string }): Promise<Category> {
+    const res = await fetch(`${API_URL}/categories/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to update category');
+    return res.json();
+  },
+
+  async deleteCategory(id: number): Promise<void> {
+    const res = await fetch(`${API_URL}/categories/${id}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) throw new Error('Failed to delete category');
+  },
+
+  // Admin - Brands
+  async createBrand(data: { name: string; logoUrl?: string }): Promise<Brand> {
+    const res = await fetch(`${API_URL}/brands`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to create brand');
+    return res.json();
+  },
+
+  async updateBrand(id: number, data: { name: string; logoUrl?: string }): Promise<Brand> {
+    const res = await fetch(`${API_URL}/brands/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to update brand');
+    return res.json();
+  },
+
+  async deleteBrand(id: number): Promise<void> {
+    const res = await fetch(`${API_URL}/brands/${id}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) throw new Error('Failed to delete brand');
+  },
 };
